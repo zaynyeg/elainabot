@@ -1,286 +1,154 @@
-/**
- * Elaina-MD — https://github.com/OmmniDevv/Elaina-MD
- * Script by OmmniDevv — Jangan Dijual!
- */
-// ============================================================
-// CEK PLUGINS — Makasih kode nya OURIN
-// ============================================================
+// © Elaina-MD | https://github.com/OmmniDevv/Elaina-MD — Jangan Dijual!
 
-function makeCekHandler(name, aliases, desc, levels) {
-  const handler = async (m, { conn, usedPrefix, command }) => {
-    const percent = Math.floor(Math.random() * 101)
-    const mentioned = m.mentionedJid?.[0] || m.sender
-    let lvl = levels.find(l => percent >= l.min) || levels[levels.length - 1]
-    const isSelf = mentioned === m.sender
-    const txt = isSelf
-      ? `Hai @${mentioned.split('@')[0]}\n\n${desc} kamu *${percent}%*\n\`\`\`${lvl.desc}\`\`\``
-      : `Kamu ingin ngecek ${desc.toLowerCase()} @${mentioned.split('@')[0]} yak?\n\n${desc} dia sebesar *${percent}%*\n\`\`\`${lvl.desc}\`\`\``
-    await m.reply(txt, { mentions: [mentioned] })
-  }
-  handler.help = [`${name} <nama/@tag>`]
-handler.tags = ['tools']
-  handler.command = new RegExp(`^(${[name, ...aliases].join('|')})$`, 'i')
-  return handler
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min }
+function mentioned(m) { return m.mentionedJid?.[0] || m.sender }
+function tag(jid) { return `@${jid.split('@')[0]}` }
+
+function makeCekPercent({ name, aliases, emoji, label, descs }) {
+    let h = async (m, { conn }) => {
+        const jid = mentioned(m)
+        const pct = randInt(0, 100)
+        const desc = descs.find(d => pct >= d.min)?.text || descs[descs.length - 1].text
+        const txt = jid === m.sender
+            ? `Hai ${tag(jid)}\n\n${emoji} *${label}* kamu *${pct}%*\n\`\`\`${desc}\`\`\``
+            : `Kamu ingin ngecek ${label.toLowerCase()} ${tag(jid)} yak?\n\n${emoji} *${label}* dia *${pct}%*\n\`\`\`${desc}\`\`\``
+        await conn.sendMessage(m.chat, { text: txt, mentions: [jid] }, { quoted: m })
+    }
+    h.help = [name, ...aliases]
+    h.tags = ['fun']
+    h.command = new RegExp(`^(${[name, ...aliases].join('|')})$`, 'i')
+    return h
 }
 
-// --- Cantik ---
-export const cantikHandler = makeCekHandler('cekcantik', ['cantik', 'beautiful'], 'Tingkat kecantikan', [
-  { min: 90, desc: 'Cantik banget kayak bidadari! 👸✨' },
-  { min: 70, desc: 'Cantik banget! 💕' },
-  { min: 50, desc: 'Manis dan cantik~ 🌸' },
-  { min: 30, desc: 'Lumayan cantik 😊' },
-  { min: 0,  desc: 'Tetep cantik kok! 💖' },
-])
-export default cantikHandler
+export const cekCreative = makeCekPercent({
+    name: 'cekcreative', aliases: ['creative', 'kreativitas'], emoji: '🎨', label: 'KREATIVITAS',
+    descs: [{ min: 90, text: 'SUPER KREATIF! Artis sejati! 🎨✨' }, { min: 70, text: 'Sangat kreatif! 🌟' }, { min: 50, text: 'Lumayan kreatif 😊' }, { min: 30, text: 'Masih bisa berkembang 💪' }, { min: 0, text: 'Butuh lebih banyak inspirasi 🌱' }]
+})
 
-// --- Ganteng ---
-export const gantengHandler = makeCekHandler('cekganteng', ['ganteng', 'handsome'], 'Tingkat kegantengan', [
-  { min: 90, desc: 'Ganteng maksimal! 😍🔥' },
-  { min: 70, desc: 'Ganteng banget! 😎' },
-  { min: 50, desc: 'Lumayan ganteng~ 👍' },
-  { min: 30, desc: 'Biasa aja sih 😅' },
-  { min: 0,  desc: 'Mungkin inner beauty? 🤭' },
-])
+export const cekGacha = makeCekPercent({
+    name: 'cekgacha', aliases: ['gacha', 'hoki'], emoji: '🎰', label: 'HOKI GACHA',
+    descs: [{ min: 90, text: 'HOKI PARAH! SSR GUARANTEED! ✨💎' }, { min: 70, text: 'Lumayan hoki! SR dapet! 🌟' }, { min: 50, text: 'Standar aja 😅' }, { min: 30, text: 'Agak sial nih 😬' }, { min: 0, text: 'UNLUCKY! Pity dulu ya 💀' }]
+})
 
-// --- Wibu ---
-export const wibuHandler = makeCekHandler('cekwibu', ['wibu', 'otaku2'], 'Tingkat kewibu-an', [
-  { min: 90, desc: 'Wibu sejati! Waifu mu pasti banyak 🎌' },
-  { min: 70, desc: 'Wibu banget! 🍜' },
-  { min: 50, desc: 'Lumayan wibu~ 🌸' },
-  { min: 30, desc: 'Sedikit wibu 😅' },
-  { min: 0,  desc: 'Bukan wibu sama sekali 😂' },
-])
+export const cekKarma = makeCekPercent({
+    name: 'cekkarma', aliases: ['karma'], emoji: '☯️', label: 'KARMA',
+    descs: [{ min: 80, text: 'Karma baik! Surga menantimu~ ✨' }, { min: 60, text: 'Karma cukup baik 😊' }, { min: 40, text: 'Karma netral ⚖️' }, { min: 20, text: 'Karma agak buruk 😬' }, { min: 0, text: 'Karma buruk! Tobat dulu! 😱' }]
+})
 
-// --- Bucin ---
-export const bucinHandler = makeCekHandler('cekbucin', ['bucin2'], 'Tingkat kebucin-an', [
-  { min: 90, desc: 'Bucin parah! Udah gak bisa diselamatkan 💘' },
-  { min: 70, desc: 'Bucin banget! 😍' },
-  { min: 50, desc: 'Lumayan bucin~ 🥺' },
-  { min: 30, desc: 'Sedikit bucin 😊' },
-  { min: 0,  desc: 'Gak bucin sama sekali 😎' },
-])
+export const cekKpopers = makeCekPercent({
+    name: 'cekkpopers', aliases: ['kpopers', 'kpop'], emoji: '🎤', label: 'KPOPERS',
+    descs: [{ min: 90, text: 'ARMY/BLINK level max! 💜💗' }, { min: 70, text: 'Kpopers sejati! 🎵' }, { min: 50, text: 'Lumayan suka kpop 😊' }, { min: 30, text: 'Casual listener 🎧' }, { min: 0, text: 'Bukan kpopers nih 😅' }]
+})
 
-// --- Jomblo ---
-export const jombloHandler = makeCekHandler('cekjomblo', ['jomblo2'], 'Tingkat kejombloan', [
-  { min: 90, desc: 'Jomblo akut! Kapan nikah? 😭' },
-  { min: 70, desc: 'Jomblo banget 😢' },
-  { min: 50, desc: 'Lumayan jomblo~ 😅' },
-  { min: 30, desc: 'Sedikit jomblo 🙂' },
-  { min: 0,  desc: 'Gak jomblo! Ada yang suka nih 😏' },
-])
+export const cekLapar = makeCekPercent({
+    name: 'ceklapar', aliases: ['lapar', 'hungry'], emoji: '🍔', label: 'LAPAR',
+    descs: [{ min: 90, text: 'LAPARRR! Makan sekarang! 🍔🍕🍜' }, { min: 70, text: 'Lumayan lapar nih 🍱' }, { min: 50, text: 'Agak lapar 😋' }, { min: 30, text: 'Masih kenyang 😊' }, { min: 0, text: 'Kenyang banget! 🤤' }]
+})
 
-// --- Gila ---
-export const gilaHandler = makeCekHandler('cekgila', ['gila2'], 'Tingkat kegilaan', [
-  { min: 90, desc: 'Gila parah! Perlu dirawat 🤪' },
-  { min: 70, desc: 'Gila banget! 😜' },
-  { min: 50, desc: 'Lumayan gila~ 😝' },
-  { min: 30, desc: 'Sedikit gila 😅' },
-  { min: 0,  desc: 'Waras banget! 😇' },
-])
+export const cekNgantuk = makeCekPercent({
+    name: 'cekngantuk', aliases: ['ngantuk', 'sleepy'], emoji: '😴', label: 'NGANTUK',
+    descs: [{ min: 90, text: 'ZZZZZ... Tidur sana! 😴💤' }, { min: 70, text: 'Ngantuk banget nih 🥱' }, { min: 50, text: 'Agak ngantuk 😪' }, { min: 30, text: 'Masih melek 👀' }, { min: 0, text: 'Seger banget! ⚡' }]
+})
 
-// --- Malas ---
-export const malasHandler = makeCekHandler('cekmalas', ['malas2'], 'Tingkat kemalasan', [
-  { min: 90, desc: 'Mager parah! Gerak dikit dong 🦥' },
-  { min: 70, desc: 'Malas banget! 😴' },
-  { min: 50, desc: 'Lumayan malas~ 😪' },
-  { min: 30, desc: 'Sedikit malas 🙂' },
-  { min: 0,  desc: 'Rajin banget! 💪' },
-])
+export const cekOverpower = makeCekPercent({
+    name: 'cekoverpower', aliases: ['overpower', 'op'], emoji: '👑', label: 'OVERPOWER',
+    descs: [{ min: 90, text: 'OVERPOWER BANGET! LEGEND! 👑🔥' }, { min: 70, text: 'Kuat banget! 💪' }, { min: 50, text: 'Lumayan kuat 😎' }, { min: 30, text: 'Masih biasa aja 😅' }, { min: 0, text: 'Masih perlu grinding 📈' }]
+})
 
-// --- Gabut ---
-export const gabutHandler = makeCekHandler('cekgabut', ['gabut2'], 'Tingkat kegabutan', [
-  { min: 90, desc: 'Gabut parah! Cari kerjaan dong 😂' },
-  { min: 70, desc: 'Gabut banget! 🥱' },
-  { min: 50, desc: 'Lumayan gabut~ 😑' },
-  { min: 30, desc: 'Sedikit gabut 🙂' },
-  { min: 0,  desc: 'Sibuk banget! 💼' },
-])
+export const cekPelit = makeCekPercent({
+    name: 'cekpelit', aliases: ['pelit', 'stingy'], emoji: '💰', label: 'PELIT',
+    descs: [{ min: 90, text: 'PELIT PARAH! Scrooge McDuck! 💰🔒' }, { min: 70, text: 'Lumayan pelit nih 😬' }, { min: 50, text: 'Standar aja 😅' }, { min: 30, text: 'Lumayan dermawan 😊' }, { min: 0, text: 'Dermawan banget! 🎁' }]
+})
 
-// --- Kaya ---
-export const kayaHandler = makeCekHandler('cekkaya', ['kaya2'], 'Tingkat kekayaan', [
-  { min: 90, desc: 'Sultan! Tajir melintir 💰👑' },
-  { min: 70, desc: 'Kaya banget! 💵' },
-  { min: 50, desc: 'Lumayan kaya~ 💳' },
-  { min: 30, desc: 'Pas-pasan 😅' },
-  { min: 0,  desc: 'Bokek! Nabung dulu 😭' },
-])
+export const cekPintar = makeCekPercent({
+    name: 'cekpintar', aliases: ['pintar', 'iq', 'smart'], emoji: '🧠', label: 'IQ',
+    descs: [{ min: 90, text: 'JENIUS! Einstein level! 🧠✨' }, { min: 75, text: 'Sangat cerdas! 🎓' }, { min: 60, text: 'Di atas rata-rata! 👍' }, { min: 40, text: 'Normal, rata-rata 😊' }, { min: 0, text: 'Tetap semangat belajar! 📚' }]
+})
 
-// --- Pintar ---
-export const pintarHandler = makeCekHandler('cekpintar', ['pintar2', 'cekiq'], 'Tingkat kepintaran', [
-  { min: 90, desc: 'Jenius! IQ over 9000 🧠✨' },
-  { min: 70, desc: 'Pintar banget! 📚' },
-  { min: 50, desc: 'Lumayan pintar~ 🎓' },
-  { min: 30, desc: 'Biasa aja 😅' },
-  { min: 0,  desc: 'Perlu belajar lebih banyak 📖' },
-])
+export const cekPsikopat = makeCekPercent({
+    name: 'cekpsikopat', aliases: ['psikopat', 'psycho'], emoji: '🔪', label: 'PSIKOPAT',
+    descs: [{ min: 90, text: 'PSIKOPAT LEVEL MAX! 🔪😈' }, { min: 70, text: 'Agak psikopat nih 😬' }, { min: 50, text: 'Standar aja 😅' }, { min: 30, text: 'Normal kok 😊' }, { min: 0, text: 'Baik hati banget! 🌸' }]
+})
 
-// --- Sabar ---
-export const sabarHandler = makeCekHandler('ceksabar', ['sabar2'], 'Tingkat kesabaran', [
-  { min: 90, desc: 'Sabar banget! Kayak nabi 😇' },
-  { min: 70, desc: 'Sabar banget! 🙏' },
-  { min: 50, desc: 'Lumayan sabar~ 😊' },
-  { min: 30, desc: 'Sedikit sabar 😤' },
-  { min: 0,  desc: 'Gampang emosi! Tarik napas dulu 😡' },
-])
+export const cekRezeki = makeCekPercent({
+    name: 'cekrezeki', aliases: ['rezeki', 'fortune'], emoji: '💸', label: 'REZEKI',
+    descs: [{ min: 90, text: 'Rezeki melimpah! Jackpot! 💰🎉' }, { min: 70, text: 'Rezeki lancar! 😊' }, { min: 50, text: 'Rezeki cukup 🙏' }, { min: 30, text: 'Sabar ya, rezeki ada waktunya 💪' }, { min: 0, text: 'Banyak berdoa dan berusaha! 🤲' }]
+})
 
-// --- Jahat ---
-export const jahatHandler = makeCekHandler('cekjahat', ['jahat2'], 'Tingkat kejahatanmu', [
-  { min: 90, desc: 'Villain sejati! 😈' },
-  { min: 70, desc: 'Jahat banget! 😠' },
-  { min: 50, desc: 'Lumayan jahat~ 😏' },
-  { min: 30, desc: 'Sedikit nakal 😅' },
-  { min: 0,  desc: 'Baik banget! 😇' },
-])
+export const cekSetia = makeCekPercent({
+    name: 'ceksetia', aliases: ['setia', 'loyal'], emoji: '💍', label: 'KESETIAAN',
+    descs: [{ min: 90, text: 'Setia sampai mati! 💍💕' }, { min: 70, text: 'Sangat setia! 💖' }, { min: 50, text: 'Lumayan setia 😊' }, { min: 30, text: 'Agak gampang tergoda 😬' }, { min: 0, text: 'Playboy/Playgirl detected! 💀' }]
+})
 
-// --- Baik ---
-export const baikHandler = makeCekHandler('cekbaik', ['baik2'], 'Tingkat kebaikanmu', [
-  { min: 90, desc: 'Malaikat! Baik banget 😇✨' },
-  { min: 70, desc: 'Baik banget! 💖' },
-  { min: 50, desc: 'Lumayan baik~ 😊' },
-  { min: 30, desc: 'Biasa aja 🙂' },
-  { min: 0,  desc: 'Perlu banyak belajar kebaikan 😅' },
-])
+export const cekSocmed = makeCekPercent({
+    name: 'ceksocmed', aliases: ['socmed', 'medsos'], emoji: '📱', label: 'KECANDUAN SOCMED',
+    descs: [{ min: 90, text: 'Kecanduan parah! Detox needed! 📱💀' }, { min: 70, text: 'Lumayan kecanduan 😅' }, { min: 50, text: 'Standar aja 😊' }, { min: 30, text: 'Bisa kontrol diri 👍' }, { min: 0, text: 'Sehat banget! Jarang main HP 🌿' }]
+})
 
-// --- Imut ---
-export const imutHandler = makeCekHandler('cekimut', ['imut2', 'cute'], 'Tingkat keimutan', [
-  { min: 90, desc: 'Imut banget! Mau diculik 🥺💕' },
-  { min: 70, desc: 'Imut banget! 🌸' },
-  { min: 50, desc: 'Lumayan imut~ 😊' },
-  { min: 30, desc: 'Biasa aja 🙂' },
-  { min: 0,  desc: 'Kurang imut 😅' },
-])
+export const cekTsundere = makeCekPercent({
+    name: 'cektsundere', aliases: ['tsundere'], emoji: '😤', label: 'TSUNDERE',
+    descs: [{ min: 90, text: 'BAKA! B-BUKAN BERARTI AKU SUKA! 😤💢' }, { min: 70, text: 'Tsundere banget nih 😳' }, { min: 50, text: 'Agak tsundere 😊' }, { min: 30, text: 'Lumayan terbuka 😄' }, { min: 0, text: 'Deredere! Terbuka banget! 💕' }]
+})
 
-// --- Sexy ---
-export const sexyHandler = makeCekHandler('ceksexy', ['sexy2'], 'Tingkat keseksian', [
-  { min: 90, desc: 'Sexy parah! 🔥😍' },
-  { min: 70, desc: 'Sexy banget! 💃' },
-  { min: 50, desc: 'Lumayan sexy~ 😏' },
-  { min: 30, desc: 'Biasa aja 🙂' },
-  { min: 0,  desc: 'Kurang sexy 😅' },
-])
+export const cekYandere = makeCekPercent({
+    name: 'cekyandere', aliases: ['yandere'], emoji: '🔪', label: 'YANDERE',
+    descs: [{ min: 90, text: 'Kamu milikku selamanya~ 🔪💕' }, { min: 70, text: 'Agak yandere nih 😳' }, { min: 50, text: 'Standar aja 😅' }, { min: 30, text: 'Masih wajar 😊' }, { min: 0, text: 'Santai banget! 🌸' }]
+})
 
-// --- Hoki ---
-export const hokiHandler = makeCekHandler('cekhoki', ['hoki2', 'luck'], 'Tingkat keberuntungan', [
-  { min: 90, desc: 'Hoki banget! Beli lotre sekarang 🍀🎰' },
-  { min: 70, desc: 'Lumayan hoki! 🌟' },
-  { min: 50, desc: 'Biasa aja~ 😊' },
-  { min: 30, desc: 'Kurang hoki 😅' },
-  { min: 0,  desc: 'Sial banget hari ini 😭' },
-])
-
-// --- Sial ---
-export const sialHandler = makeCekHandler('ceksial', ['sial2'], 'Tingkat kesialanmu', [
-  { min: 90, desc: 'Sial parah! Hati-hati hari ini 😱' },
-  { min: 70, desc: 'Lumayan sial 😢' },
-  { min: 50, desc: 'Biasa aja~ 😅' },
-  { min: 30, desc: 'Sedikit sial 🙂' },
-  { min: 0,  desc: 'Beruntung banget! 🍀' },
-])
-
-// --- Otaku ---
-export const otakuHandler = makeCekHandler('cekotaku', ['otaku2'], 'Tingkat keotakuan', [
-  { min: 90, desc: 'Otaku sejati! Waifu > segalanya 🎌' },
-  { min: 70, desc: 'Otaku banget! 🍜' },
-  { min: 50, desc: 'Lumayan otaku~ 🌸' },
-  { min: 30, desc: 'Sedikit otaku 😅' },
-  { min: 0,  desc: 'Bukan otaku 😂' },
-])
-
-// --- Introvert ---
-export const introvertHandler = makeCekHandler('cekintrovert', ['introvert2'], 'Tingkat keintrovetan', [
-  { min: 90, desc: 'Introvert parah! Rumah > segalanya 🏠' },
-  { min: 70, desc: 'Introvert banget! 🤫' },
-  { min: 50, desc: 'Lumayan introvert~ 😶' },
-  { min: 30, desc: 'Sedikit introvert 🙂' },
-  { min: 0,  desc: 'Extrovert banget! 🎉' },
-])
-
-// --- Gamer ---
-export const gamerHandler = makeCekHandler('cekgamer', ['gamer2'], 'Tingkat kegameran', [
-  { min: 90, desc: 'Pro player! Rank tertinggi 🎮🏆' },
-  { min: 70, desc: 'Gamer banget! 🕹️' },
-  { min: 50, desc: 'Lumayan gamer~ 🎯' },
-  { min: 30, desc: 'Casual gamer 😅' },
-  { min: 0,  desc: 'Bukan gamer 😂' },
-])
-
-// --- Mesum ---
-export const mesumHandler = makeCekHandler('cekmesum', ['mesum2'], 'Tingkat kemesumanmu', [
-  { min: 90, desc: 'Mesum parah! Istighfar dulu 😳' },
-  { min: 70, desc: 'Lumayan mesum 😏' },
-  { min: 50, desc: 'Biasa aja~ 😅' },
-  { min: 30, desc: 'Sedikit mesum 🙂' },
-  { min: 0,  desc: 'Suci banget! 😇' },
-])
-
-// --- Cupu ---
-export const cupuHandler = makeCekHandler('cekcupu', ['cupu2'], 'Tingkat kecupuan', [
-  { min: 90, desc: 'Cupu parah! 🤓' },
-  { min: 70, desc: 'Lumayan cupu 😅' },
-  { min: 50, desc: 'Biasa aja~ 🙂' },
-  { min: 30, desc: 'Sedikit cupu 😊' },
-  { min: 0,  desc: 'Kece banget! 😎' },
-])
-
-// --- Kece ---
-export const keceHandler = makeCekHandler('cekkece', ['kece2'], 'Tingkat kekecean', [
-  { min: 90, desc: 'Kece parah! Swag level 100 😎🔥' },
-  { min: 70, desc: 'Kece banget! 😏' },
-  { min: 50, desc: 'Lumayan kece~ 🙂' },
-  { min: 30, desc: 'Biasa aja 😅' },
-  { min: 0,  desc: 'Kurang kece 😂' },
-])
-
-// --- Jodoh ---
-const jodohHandler = async (m, { conn, usedPrefix, command }) => {
-  const input = (m.text || '').trim()
-  const parts = input.split(/[&,]/).map(s => s.trim()).filter(Boolean)
-  if (parts.length < 2) return m.reply(`💕 *ᴄᴇᴋ ᴊᴏᴅᴏʜ*\n\n> Masukkan 2 nama!\n\n> Contoh: ${usedPrefix}cekjodoh Budi & Ani`)
-  const percent = Math.floor(Math.random() * 101)
-  const desc = percent >= 90 ? 'Jodoh banget! Langsung nikah aja! 💍'
-    : percent >= 70 ? 'Cocok banget! 💕'
-    : percent >= 50 ? 'Lumayan cocok~ 😊'
-    : percent >= 30 ? 'Hmm, perlu usaha lebih 🤔'
-    : 'Mungkin cari yang lain? 😅'
-  m.reply(`💕 *ᴄᴇᴋ ᴊᴏᴅᴏʜ*\n\n👫 *${parts[0]}* & *${parts[1]}*\n\nTingkat kecocokan: *${percent}%*\n\`\`\`${desc}\`\`\``)
+// ─── Cek Sisa Umur (special) ──────────────────────────────────
+export let cekSisaUmur = async (m, { conn }) => {
+    const jid = mentioned(m)
+    const tahun = randInt(20, 99), bulan = randInt(0, 11), hari = randInt(0, 29)
+    const desc = tahun > 80 ? 'Panjang umur banget! 🎉' : tahun > 60 ? 'Lumayan panjang~ ✨' : tahun > 40 ? 'Cukup lah ya 😊' : 'Jaga kesehatan ya! 🙏'
+    const txt = jid === m.sender
+        ? `Hai ${tag(jid)}\n\nSisa umur kamu *${tahun} Tahun ${bulan} Bulan ${hari} Hari*\n\`\`\`${desc}\`\`\``
+        : `Kamu ingin ngecek sisa umur ${tag(jid)} yak?\n\nSisa umur dia *${tahun} Tahun ${bulan} Bulan ${hari} Hari*\n\`\`\`${desc}\`\`\``
+    await conn.sendMessage(m.chat, { text: txt, mentions: [jid] }, { quoted: m })
 }
-jodohHandler.help = ['cekjodoh <nama1> & <nama2>']
-jodohHandler.tags = ['cek']
-jodohHandler.command = /^(cekjodoh|jodoh|match)$/i
-export { jodohHandler }
+cekSisaUmur.help = ['ceksisaumur']
+cekSisaUmur.tags = ['fun']
+cekSisaUmur.command = /^(ceksisaumur|sisaumur|umur)$/i
 
-// --- Khodam (text only, no TTS to avoid gtts dep issues) ---
-const KHODAMS = [
-  { name: 'Harimau Putih', meaning: 'Kamu kuat dan berani seperti harimau.' },
-  { name: 'Panda Ompong', meaning: 'Kamu menggemaskan dan selalu membuat orang tersenyum.' },
-  { name: 'Bebek Karet', meaning: 'Kamu selalu tenang dan ceria menghadapi masalah.' },
-  { name: 'Ninja Turtle', meaning: 'Kamu lincah dan tangguh, siap melindungi yang lemah.' },
-  { name: 'Kucing Kulkas', meaning: 'Kamu misterius dan selalu ada di tempat tak terduga.' },
-  { name: 'Sabun Wangi', meaning: 'Kamu selalu membawa keharuman di mana pun berada.' },
-  { name: 'Semut Kecil', meaning: 'Kamu pekerja keras dan selalu bisa diandalkan.' },
-  { name: 'Indomie Goreng', meaning: 'Selalu bikin kenyang dan bahagia.' },
-  { name: 'Singa Bermahkota', meaning: 'Kamu lahir sebagai pemimpin, bijaksana seperti raja.' },
-  { name: 'Macan Kumbang', meaning: 'Kamu misterius dan kuat, selalu waspada.' },
-  { name: 'Kuda Emas', meaning: 'Kamu berharga dan kuat, siap berlari menuju sukses.' },
-  { name: 'Elang Biru', meaning: 'Kamu memiliki visi tajam dan melihat peluang dari jauh.' },
-  { name: 'Naga Pelangi', meaning: 'Kamu tangguh dan memiliki kekuatan besar.' },
-  { name: 'Gajah Putih', meaning: 'Kamu bijaksana, lambang keberanian dan keteguhan hati.' },
-  { name: 'Banteng Sakti', meaning: 'Kamu kuat dan penuh semangat, tidak takut rintangan.' },
-  { name: 'Sandal Jepit', meaning: 'Selalu santai dan nyaman.' },
-  { name: 'Bantal Guling', meaning: 'Selalu nyaman di pelukan.' },
-  { name: 'Anjing Pelacak', meaning: 'Kamu setia dan penuh dedikasi.' },
-  { name: 'Kopi Susu', meaning: 'Kamu manis dan selalu bikin semangat orang sekitarmu.' },
-  { name: 'Teh Celup', meaning: 'Selalu memberikan rasa hangat di hati.' },
-]
-const khodamHandler = async (m, { conn, usedPrefix, command }) => {
-  let targetName = m.name || m.sender.split('@')[0]
-  if (m.quoted) targetName = m.quoted.pushName || m.quoted.sender?.split('@')[0] || targetName
-  else if (m.mentionedJid?.[0]) targetName = m.mentionedJid[0].split('@')[0]
-  else if (m.text) targetName = m.text
-  const khodam = KHODAMS[Math.floor(Math.random() * KHODAMS.length)]
-  m.reply(`🔮 *ᴄᴇᴋ ᴋʜᴏᴅᴀᴍ*\n\nHalo kak *${targetName}*!\n\nKhodam kamu adalah:\n*${khodam.name}*\n\n_${khodam.meaning}_`)
+// ─── Cek Umur (random age) ────────────────────────────────────
+export let cekUmur = async (m, { conn }) => {
+    const jid = mentioned(m)
+    const age = randInt(5, 80)
+    const desc = age >= 60 ? 'Bijaksana seperti orang tua! 🧓' : age >= 30 ? 'Dewasa dan matang! 😊' : age >= 17 ? 'Muda dan energik! ⚡' : 'Masih bocil! 🍼'
+    const txt = jid === m.sender
+        ? `Hai ${tag(jid)}\n\nUmur kamu *${age} tahun*\n\`\`\`${desc}\`\`\``
+        : `Kamu ingin ngecek umur ${tag(jid)} yak?\n\nUmur dia *${age} tahun*\n\`\`\`${desc}\`\`\``
+    await conn.sendMessage(m.chat, { text: txt, mentions: [jid] }, { quoted: m })
 }
-khodamHandler.help = ['cekkhodam', 'khodam']
-khodamHandler.tags = ['fun']
-khodamHandler.command = /^(cekkhodam|khodam|cekhodam)$/i
-export { khodamHandler }
+cekUmur.help = ['cekumur']
+cekUmur.tags = ['fun']
+cekUmur.command = /^(cekumur|cekage|age)$/i
+
+// ─── Cek Berat ────────────────────────────────────────────────
+export let cekBerat = async (m, { conn }) => {
+    const jid = mentioned(m)
+    const berat = randInt(40, 100)
+    const desc = berat >= 90 ? 'Big boy/girl! 💪' : berat >= 70 ? 'Berisi dan sehat! 😊' : berat >= 55 ? 'Ideal banget! 👍' : berat >= 45 ? 'Langsing nih~ 🌸' : 'Kurus banget, makan yang banyak! 🍔'
+    const txt = jid === m.sender
+        ? `Hai ${tag(jid)}\n\nBerat badan kamu *${berat} kg*\n\`\`\`${desc}\`\`\``
+        : `Kamu ingin ngecek berat badan ${tag(jid)} yak?\n\nBerat badan dia *${berat} kg*\n\`\`\`${desc}\`\`\``
+    await conn.sendMessage(m.chat, { text: txt, mentions: [jid] }, { quoted: m })
+}
+cekBerat.help = ['cekberat']
+cekBerat.tags = ['fun']
+cekBerat.command = /^(cekberat|berat|weight)$/i
+
+// ─── Cek Tinggi ───────────────────────────────────────────────
+export let cekTinggi = async (m, { conn }) => {
+    const jid = mentioned(m)
+    const tinggi = randInt(150, 200)
+    const desc = tinggi >= 190 ? 'TINGGI BANGET! Model basketball! 🏀' : tinggi >= 175 ? 'Tinggi ideal! 😎' : tinggi >= 165 ? 'Lumayan tinggi 👍' : tinggi >= 155 ? 'Standard kok 🙂' : 'Imut dan mungil! 🥺'
+    const txt = jid === m.sender
+        ? `Hai ${tag(jid)}\n\nTinggi badan kamu *${tinggi} cm*\n\`\`\`${desc}\`\`\``
+        : `Kamu ingin ngecek tinggi badan ${tag(jid)} yak?\n\nTinggi badan dia *${tinggi} cm*\n\`\`\`${desc}\`\`\``
+    await conn.sendMessage(m.chat, { text: txt, mentions: [jid] }, { quoted: m })
+}
+cekTinggi.help = ['cektinggi']
+cekTinggi.tags = ['fun']
+cekTinggi.command = /^(cektinggi|tinggi|tall|height)$/i
+
+export default cekCreative
