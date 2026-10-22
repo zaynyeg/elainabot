@@ -6,67 +6,55 @@
  * ╚══════════════════════════════════════════╝
  */
 
-import axios from 'axios'
-import * as cheerio from 'cheerio'
-const client = axios.create({
-  withCredentials: true,
-  headers: {
-    origin: "https://unrestrictedaiimagegenerator.com",
-    referer: "https://unrestrictedaiimagegenerator.com/",
-    "user-agent":
-      "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Mobile Safari/537.36",
-  },
-});
-
-async function unrestrictedai(prompt, style = "anime") {
-  const styles = [
-    "photorealistic",
-    "digital-art",
-    "impressionist",
-    "anime",
-    "fantasy",
-    "sci-fi",
-    "vintage",
-  ];
-
-  if (!prompt) throw new Error("Prompt is required");
-  if (!styles.includes(style))
-    throw new Error(`Available styles: ${styles.join(", ")}`);
-
-  const { data: html, headers } = await client.get(
-    "https://unrestrictedaiimagegenerator.com/"
-  );
-
-  const cookies = headers["set-cookie"]?.join("; ");
-  if (cookies) client.defaults.headers.Cookie = cookies;
-
-  const $ = cheerio.load(html);
-  const nonce = $('input[name="_wpnonce"]').val();
-  if (!nonce) throw new Error("Nonce not found");
-
-  const form = new URLSearchParams({
-    generate_image: "true",
-    image_description: prompt,
-    image_style: style,
-    _wpnonce: nonce,
-  });
-
-  const { data: resultHtml } = await client.post(
-    "https://unrestrictedaiimagegenerator.com/",
-    form.toString(),
-    {
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-      },
-    }
-  );
-
-  const $$ = cheerio.load(resultHtml);
-  const img = $$("img#resultImage").attr("src");
-
-  if (!img) throw new Error("Image not found");
-
-  return img;
+import config from '../../config.js'
+import { f } from './../../src/lib/elaina-http.js'
+import te from '../../src/lib/elaina-error.js'
+const pluginConfig = {
+    name: 'text2img3',
+    alias: [],
+    category: 'ai',
+    description: 'Generate gambar dari teks dengan AI',
+    usage: '.txt2img <prompt> | <style>',
+    example: '.txt2img beautiful sunset | anime',
+    isOwner: false,
+    isPremium: false,
+    isGroup: false,
+    isPrivate: false,
+    cooldown: 30,
+    energi: 1,
+    isEnabled: true
 }
 
-export default unrestrictedai
+const STYLES = ['photorealistic', 'digital-art', 'impressionist', 'anime', 'fantasy', 'sci-fi', 'vintage']
+
+async function handler(m, { sock }) {
+    const input = m.args.join(' ')
+    if (!input) {
+        return m.reply(
+            `🎨 *ᴛᴇxᴛ ᴛᴏ ɪᴍᴀɢᴇ*\n\n` +
+            `> Generate gambar dari teks dengan AI\n\n` +
+            `\`Contoh: ${m.prefix}txt2img beautiful sunset | anime\`\n\n` +
+            `🎭 *sᴛʏʟᴇs*\n` +
+            `> \`${STYLES.join(', ')}\``
+        )
+    }
+
+    const [prompt, styleInput] = input.split('|').map(s => s.trim())
+    const style = STYLES.includes(styleInput) ? styleInput : 'anime'
+
+    m.react('🕕')
+
+    try {
+        const { data } = await f(`https://api.neoxr.eu/api/stablediff?prompt=${encodeURIComponent(prompt)}&model=default&orientation=potrait&apikey=${config.APIkey.neoxr}`)
+
+        await sock.sendMedia(m.chat, data.url, null, m, {
+            type: 'image'
+        })
+
+    } catch (error) {
+        m.react('☢')
+        m.reply(te(m.prefix, m.command, m.pushName))
+    }
+}
+
+export { pluginConfig as config, handler }
