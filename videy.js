@@ -7,48 +7,68 @@
  */
 
 import axios from 'axios'
-import FormData from 'form-data'
-import fs from 'fs'
-import path from 'path'
-import crypto from 'crypto'
-async function videy(file){
-    try{
-        if(!file) throw new Error('input required')
-        if(!fs.existsSync(file)) throw new Error('file not found')
+import config from '../../config.js'
+import { f } from '../../src/lib/elaina-http.js'
+import te from '../../src/lib/elaina-error.js'
+const NEOXR_APIKEY = config.APIkey?.neoxr || 'Milik-Bot-RimuruMD'
 
-        const form = new FormData()
-        form.append(
-            'file',
-            fs.createReadStream(file),
-            {
-                filename: path.basename(file),
-                contentType: 'video/mp4'
-            }
+const pluginConfig = {
+    name: 'videy',
+    alias: ['vdl', 'videydownload', 'videydl'],
+    category: 'download',
+    description: 'Download video dari videy.co',
+    usage: '.videy <url>',
+    example: '.videy https://videy.co/v?id=7ZH1ZRIF',
+    isOwner: false,
+    isPremium: false,
+    isGroup: false,
+    isPrivate: false,
+    cooldown: 10,
+    energi: 1,
+    isEnabled: true
+}
+
+async function handler(m, { sock }) {
+    const url = m.text?.trim()
+    
+    if (!url) {
+        return m.reply(
+            `🎬 *ᴠɪᴅᴇʏ ᴅᴏᴡɴʟᴏᴀᴅ*\n\n` +
+            `> Masukkan URL videy.co\n\n` +
+            `\`Contoh: ${m.prefix}videy https://videy.co/v?id=7ZH1ZRIF\``
         )
-
-        const r = await axios.post(
-            'https://videy.co/api/upload?visitorId=' + crypto.randomUUID(),
-            form,
-            {
-                headers:{
-                    ...form.getHeaders(),
-                    'User-Agent':'Mozilla/5.0 (Linux; Android 10)',
-                    origin:'https://videy.co',
-                    referer:'https://videy.co/',
-                    accept:'application/json'
-                },
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity
-            }
-        )
-
-        return {
-            output:r.data
+    }
+    
+    if (!url.match(/videy\.co/i)) {
+        return m.reply(`❌ URL tidak valid. Gunakan link dari videy.co`)
+    }
+    
+    m.react('🕕')
+    
+    try {
+        const data = await f(`https://api.neoxr.eu/api/videy?url=${encodeURIComponent(url)}&apikey=${NEOXR_APIKEY}`)
+        
+        if (!data?.status || !data?.data?.url) {
+            m.react('❌')
+            return m.reply(`❌ Gagal mengambil video. Link tidak valid atau sudah expired.`)
         }
-
-    }catch(e){
-        return { status:'error', msg:e.message }
+        
+        const videoUrl = data.data.url
+        
+        await sock.sendMedia(m.chat, videoUrl, null, m, {
+            type: 'video',
+            contextInfo: {
+                forwardingScore: 99,
+                isForwarded: true
+            }
+        })
+        
+        m.react('✅')
+        
+    } catch (error) {
+        m.react('☢')
+        m.reply(te(m.prefix, m.command, m.pushName))
     }
 }
 
-export default videy
+export { pluginConfig as config, handler }

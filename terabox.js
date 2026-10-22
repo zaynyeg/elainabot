@@ -6,66 +6,130 @@
  * ╚══════════════════════════════════════════╝
  */
 
+import { execFile } from "child_process";
+import { promisify } from "util";
+import fs from "fs";
+import os from "os";
+import path from "path";
 import axios from "axios";
+import { TeraBoxDL } from "../../src/scraper/terabox.js";
 
-const CONFIG = {
-  base: "https://flowvideoplayer.com",
-  ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+const exec = promisify(execFile);
+
+const pluginConfig = {
+  name: "terabox",
+  alias: ["tb", "tera", "teraboxdl", "tbdl"],
+  category: "download",
+  description: "Download video/file dari TeraBox",
+  usage: ".terabox <url>",
+  example: ".terabox https://terabox.com/s/xxx",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 15,
+  energi: 2,
+  isEnabled: true,
 };
 
-async function TeraBoxDL(url) {
-  try {
-    const session = await axios.get(CONFIG.base, {
-      headers: { "User-Agent": CONFIG.ua },
-    });
-
-    const rawCookies = session.headers["set-cookie"] || [];
-    const cookieStr = rawCookies.map((c) => c.split(";")[0]).join("; ");
-    const token = session.data.match(
-      /name=["']csrf-token["']\s+content=["']([^"']+)["']/i,
-    )?.[1];
-
-    if (!token) {
-      return { status: false, error: "CSRF Token not found" };
-    }
-
-    const response = await axios.post(
-      `${CONFIG.base}/telegram/bot/search/video`,
-      { url },
-      {
-        headers: {
-          "User-Agent": CONFIG.ua,
-          "Content-Type": "application/json",
-          "X-CSRF-TOKEN": token,
-          "X-Requested-With": "XMLHttpRequest",
-          Cookie: cookieStr,
-          Origin: CONFIG.base,
-          Referer: `${CONFIG.base}/`,
-        },
-      },
+async function handler(m, { sock }) {
+  const text = m.text?.trim();
+  if (!text) {
+    m.react("❌");
+    return m.reply(
+      `📦 *TeraBox Downloader*\n\n` +
+        `Download video atau file dari TeraBox.\n\n` +
+        `*PENGGUNAAN:*\n` +
+        `> *${m.prefix}terabox <link>*\n\n` +
+        `*CONTOH:*\n` +
+        `> *${m.prefix}terabox https://terabox.com/s/xxx*\n\n` +
+        `_File dikirim sebagai dokumen, mungkin agak lama_`,
     );
+  }
 
-    const result = response.data;
-    if (result.error === false && result.data && result.data.length > 0) {
-      const item = result.data[0];
-      return {
-        status: true,
-        file_name: item.file_name,
-        thumbnail: item.thumbnail,
-        download_url: item.download_url,
-        stream_url: item.stream_final_url || item.stream_url,
-        file_size: item.file_size,
-        file_size_bytes: item.file_size_bytes,
-        duration: item.duration,
-        extension: item.extension,
-        share_url: item.share_url,
-      };
+  m.react("🕕");
+
+  try {
+    const result = await TeraBoxDL(text);
+
+    if (!result.status) {
+      m.react("☢");
+      return m.reply(`❌ *TeraBox Gagal*\n\n> ${result.error}`);
     }
 
-    return { status: false, error: "Tidak ada data ditemukan" };
+    let caption =
+      `📦 *TeraBox*\n\n` +
+      `> 📌 ${result.file_name}\n` +
+      `> 📏 Size: ${result.file_size}\n` +
+      `> ⏱️ Durasi: ${result.duration}`;
+
+    if (result.thumbnail) {
+      await sock.sendMedia(m.chat, result.thumbnail, caption, m, {
+        type: "image",
+      });
+    }
+
+    if (result.stream_url && result.stream_url.endsWith(".m3u8")) {
+      const tmpFile = path.join(os.tmpdir(), `tb_${Date.now()}.mp4`);
+
+      await exec(
+        "ffmpeg",
+        [
+          "-y",
+          "-i",
+          result.stream_url,
+          "-c",
+          "copy",
+          "-bsf:a",
+          "aac_adtstoasc",
+          tmpFile,
+        ],
+        { timeout: 120000 },
+      );
+
+      const buffer = fs.readFileSync(tmpFile);
+      fs.unlinkSync(tmpFile);
+
+      await sock.sendMessage(
+        m.chat,
+        {
+          document: buffer,
+          mimetype: "video/mp4",
+          fileName:
+            (result.file_name || "video").replace(/[<>:"/\\|?*]/g, "") + ".mp4",
+          caption,
+        },
+        { quoted: m },
+      );
+    } else if (result.download_url) {
+      const res = await axios.get(result.download_url, {
+        responseType: "arraybuffer",
+        timeout: 120000,
+        maxContentLength: 200 * 1024 * 1024,
+      });
+
+      const ext = result.extension || ".mp4";
+      const fileName =
+        (result.file_name || "file").replace(/[<>:"/\\|?*]/g, "") + ext;
+
+      await sock.sendMessage(
+        m.chat,
+        {
+          document: Buffer.from(res.data),
+          mimetype: "application/zip",
+          fileName,
+          caption,
+        },
+        { quoted: m },
+      );
+    }
+
+    m.react("✅");
   } catch (e) {
-    return { status: false, error: e.message };
+    console.error(e);
+    m.react("☢");
+    m.reply("❌ Gagal mengambil data TeraBox, coba lagi nanti");
   }
 }
 
-export { TeraBoxDL };
+export { pluginConfig as config, handler };

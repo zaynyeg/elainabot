@@ -6,56 +6,91 @@
  * ╚══════════════════════════════════════════╝
  */
 
-import axios from "axios"
-import * as cheerio from "cheerio"
+import searchKonachan from '../../src/scraper/konachan.js';
 
-async function searchKonachan(tags) {
-  const url = `https://konachan.net/post?tags=${encodeURIComponent(tags)}`;
+const pluginConfig = {
+  name: "konachan",
+  alias: ["konasearch", "kona", "konaimg"],
+  category: "anime",
+  description: "Cari gambar anime dari konachan",
+  usage: ".konachan <tags>",
+  example: ".konachan long_hair blue_eyes",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 5,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { args, sock }) {
+  if (!args[0]) {
+    let txt = `🌸 *KONACHAN SEARCH* 🌸\n\n`;
+    txt += `Halo kak! Lagi nyari referensi gambar anime keren? Sini aku carikan dari Konachan!\n\n`;
+    txt += `*Cara Pakai:*\n`;
+    txt += `👉 \`${m.prefix}konachan <tag1> <tag2>\`\n\n`;
+    txt += `*Contoh:*\n`;
+    txt += `\`${m.prefix}konachan long_hair\`\n`;
+    txt += `\`${m.prefix}konachan naruto\`\n`;
+    txt += `\`${m.prefix}konachan blue_eyes smile\`\n\n`;
+    txt += `*Tags populer:*\n`;
+    txt += `long_hair, blue_eyes, smile, school_uniform, nekomimi`;
+    return m.reply(txt);
+  }
+
+  await m.react("🕕");
 
   try {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
+    const query = args.join(" ");
+    const results = await searchKonachan(query);
 
-    const $ = cheerio.load(data);
-    const posts = [];
+    if (results.error) {
+      await m.react("❌");
+      return m.reply(`❌ Maaf kak, ada masalah saat nyari gambarnya!\nError: ${results.message}`);
+    }
 
-    $('#post-list-posts li').each((index, element) => {
-      const id = $(element).attr('id')?.replace('p', '') || null;
-      const previewUrl = $(element).find('img').attr('src') || null;
-      const sourceUrl = $(element).find('.thumb').attr('href') || null;
+    if (!results || results.length === 0) {
+      await m.react("❌");
+      return m.reply(`❌ Aduh kak, gambarnya nggak ketemu nih! Coba ganti tag pencariannya ya. 😭\n\n*Contoh tag:*\n${args[0]} → coba pake tag lain kayak "anime", "wallpaper", atau yang lebih spesifik`);
+    }
 
-      const titleAttr = $(element).find('.thumb img').attr('title') || '';
-      
-      let cleanTags = [];
-      if (titleAttr.includes('Tags:')) {
-        const rawTags = titleAttr.split('Tags:')[1]?.split('User:')[0]?.trim();
-        if (rawTags) {
-          cleanTags = rawTags.split(/\s+/);
-        }
-      } else {
-     
-        cleanTags = $(element).find('img').attr('alt')?.trim().split(/\s+/) || [];
-      }
+    // Batasin maksimal hasil
+    const maxResults = Math.min(results.length, 20);
+    const randomIdx = Math.floor(Math.random() * maxResults);
+    const image = results[randomIdx];
 
-      if (id) {
-        posts.push({
-          id: parseInt(id),
-          tags: cleanTags,
-          details_page: sourceUrl ? `https://konachan.net${sourceUrl}` : null,
-          images: {
-            preview: previewUrl ? (previewUrl.startsWith('http') ? previewUrl : `https:${previewUrl}`) : null
-          }
-        });
-      }
-    });
+    if (!image || !image.images || !image.images.preview) {
+      await m.react("❌");
+      return m.reply(`❌ Waduh kak, gambarnya ga bisa dimuat! Coba cari dengan tag lain ya~`);
+    }
 
-    return posts;
-  } catch (error) {
-    return { error: true, message: error.message };
+    // Format caption
+    let caption = `🌸 *KONACHAN SEARCH RESULT* 🌸\n\n`;
+    caption += `🔍 *Query:* ${query}\n`;
+    caption += `📊 *Total found:* ${results.length} gambar\n`;
+    caption += `🎲 *Random ke-${randomIdx + 1}*\n\n`;
+    caption += `🏷️ *Tags:*\n`;
+    
+    // Tampilkan tags (batasi biar ga kepanjangan)
+    const tagDisplay = image.tags.slice(0, 15).join(", ");
+    caption += `${tagDisplay}${image.tags.length > 15 ? '...' : ''}\n\n`;
+    caption += `🔗 *Source:*\n${image.details_page || 'https://konachan.net'}\n\n`;
+    caption += `💕 *Rimuru:* Selamat menikmati darling~ ♡`;
+
+    // Kirim gambar pake sendMessage (bukan sendMedia)
+    await sock.sendMessage(m.chat, {
+      image: { url: image.images.preview },
+      caption: caption
+    }, { quoted: m });
+
+    await m.react("✅");
+    
+  } catch (e) {
+    console.error('[Konachan] Error:', e);
+    await m.react("❌");
+    await m.reply(`❌ Maaf kak, sistem error! 😭\n\nError: ${e.message}\n\nCoba lagi nanti ya darling~ 💕`);
   }
 }
 
-export default searchKonachan;
+export { pluginConfig as config, handler };
