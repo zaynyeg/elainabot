@@ -1,178 +1,235 @@
-// © Elaina-MD | https://github.com/OmmniDevv/Elaina-MD — Jangan Dijual!
-import { sendQuickMenu } from '../../lib/menuHelper.js'
-let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
+/**
+ * ╔══════════════════════════════════════════╗
+ * ║         E L A I N A  -  M D             ║
+ * ║   Script by OmmniDevv — Jangan Dijual!  ║
+ * ║  https://github.com/OmmniDevv/Elaina-MD ║
+ * ╚══════════════════════════════════════════╝
+ */
 
-  const optRows = [
-    { title: '✨ | Welcome',          id: `${usedPrefix + command} welcome` },
-    { title: '🚫 | Delete',           id: `${usedPrefix + command} delete` },
-    { title: '👁 | Antiviewonce',     id: `${usedPrefix + command} antiviewonce` },
-    { title: '🌎 | Public',           id: `${usedPrefix + command} public` },
-    { title: '🗣️ | Simi',            id: `${usedPrefix + command} simi` },
-    { title: '🔞 | Nsfw',             id: `${usedPrefix + command} nsfw` },
-    { title: '🌟 | PremNsfwChat',     id: `${usedPrefix + command} premnsfwchat` },
-    { title: '🔗 | Antilink',         id: `${usedPrefix + command} antilink` },
-    { title: '🚫 | Antidelete',       id: `${usedPrefix + command} antidelete` },
-    { title: '📛 | Antitoxic',        id: `${usedPrefix + command} antitoxic` },
-    { title: '📞 | Anticall',         id: `${usedPrefix + command} anticall` },
-    { title: '🖼 | Autosticker',      id: `${usedPrefix + command} stiker` },
-    { title: '⏏️ | Autolevelup',     id: `${usedPrefix + command} autolevelup` },
-    { title: '🔎 | Detect',           id: `${usedPrefix + command} detect` },
-    { title: '📑 | Document',         id: `${usedPrefix + command} document` },
-    { title: '❗ | Restrict',         id: `${usedPrefix + command} restrick` },
-    { title: '😐 | Nyimak',           id: `${usedPrefix + command} nyimak` },
-    { title: '☑️ | Autoread',        id: `${usedPrefix + command} autoread` },
-    { title: '💬 | PcOnly',           id: `${usedPrefix + command} pconly` },
-    { title: '🏢 | GcOnly',           id: `${usedPrefix + command} gconly` },
-    { title: '📷 | SwOnly',           id: `${usedPrefix + command} swonly` },
-  ]
+import config from '../../config.js'
+import { getDatabase } from '../../src/lib/elaina-database.js'
 
-  const ftroliQuoted = {
-    key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast' },
-    message: {
-      orderMessage: {
-        orderId: '1337',
-        thumbnail: null,
-        itemCount: optRows.length,
-        status: 'INQUIRY',
-        surface: 'CATALOG',
-        message: `Pilih opsi yang ingin diubah`,
-        orderTitle: `⚙️ Options`,
-        sellerJid: `${global.nomorbot}@s.whatsapp.net`,
-        token: 'elaina-enable',
-        totalAmount1000: 0,
-        totalCurrencyCode: 'IDR'
-      }
-    }
-  }
+export const FEATURE_CREDIT = "Fitur By: Anita Putri Azzahra\nFitur SC Bot Rimuru MD 👑\nTiktok: https://tiktok.com/@anita.putri.azzah1\nSaluran Resmi: https://whatsapp.com/channel/0029Vb8dmsUElagkVPIw9X2P";
 
-  let isEnable = /true|enable|(turn)?on|1/i.test(command)
+
+const pluginConfig = {
+  name: "enable",
+  alias: ["disable", "on", "off"],
+  category: "main",
+  description: "Imported from Rimuru MD V4.6",
+  usage: "",
+  example: "",
+  isOwner: false,
+  isPremium: false,
+  isGroup: false,
+  isPrivate: false,
+  cooldown: 3,
+  energi: 1,
+  isEnabled: true,
+};
+
+async function handler(m, { sock, prefix, command, args, isOwner, isAdmin, isROwner }) {
+    const conn = sock;
+    const usedPrefix = prefix || m.prefix || ".";
+  let isEnable = /^(enable|on)$/i.test(command)
+
+  global.db.data.chats = global.db.data.chats || {}
+
   let chat = global.db.data.chats[m.chat]
-  let user = global.db.data.users[m.sender]
-  let bot = global.db.data.settings[conn.user.id] || {}
+  if (!chat) chat = global.db.data.chats[m.chat] = {}
+
+  if (!('welcome' in chat)) chat.welcome = true
+  if (!('delete' in chat)) chat.delete = true
+  if (!('antiDelete' in chat)) chat.antiDelete = false
+  if (!('antiLink' in chat)) chat.antiLink = false
+  if (!('antiMedia' in chat)) chat.antiMedia = false
+  if (!('antiBadword' in chat)) chat.antiBadword = false
+  if (!('autogpt' in chat)) chat.autogpt = false
+  if (!('autosimi' in chat)) chat.autosimi = false
+  if (!('autodl' in chat)) chat.autodl = false
+  if (!('antiPromosi' in chat)) chat.antiPromosi = false
+  if (!('detect' in chat)) chat.detect = true
+  if (!('rpgs' in chat)) chat.rpgs = true
+  if (!('autolevelup' in chat)) chat.autolevelup = false
+  if (global.autocorrect === undefined)
+  global.autocorrect = true
+
   let type = (args[0] || '').toLowerCase()
-  let isAll = false, isUser = false
+  let isAll = false
 
   switch (type) {
     case 'welcome':
-      if (!m.isGroup) {
-        if (!isOwner) { global.dfail('group', m, conn); throw false }
-      } else if (!isAdmin) { global.dfail('admin', m, conn); throw false }
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
       chat.welcome = isEnable
       break
-    case 'detect':
-      if (!m.isGroup) {
-        if (!isOwner) { global.dfail('group', m, conn); throw false }
-      } else if (!isAdmin) { global.dfail('admin', m, conn); throw false }
-      chat.detect = isEnable
-      break
-    case 'viewonce':
-    case 'antiviewonce':
-      if (m.isGroup && !(isAdmin || isOwner)) { global.dfail('admin', m, conn); throw false }
-      chat.viewonce = isEnable
-      break
-    case 'antidelete':
-      if (m.isGroup && !(isAdmin || isOwner)) { global.dfail('admin', m, conn); throw false }
-      chat.delete = !isEnable
-      break
+
     case 'delete':
-      if (m.isGroup && !(isAdmin || isOwner)) { global.dfail('admin', m, conn); throw false }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.delete = isEnable
       break
-    case 'document':
-      chat.useDocument = isEnable
+
+    case 'antidelete':
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+      chat.antiDelete = isEnable
       break
-    case 'public':
-      isAll = true
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      global.opts['self'] = !isEnable
-      break
+
     case 'antilink':
-      if (m.isGroup && !(isAdmin || isOwner)) { global.dfail('admin', m, conn); throw false }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.antiLink = isEnable
       break
-    case 'simi':
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      chat.simi = isEnable
+
+    case 'antibadword':
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+      chat.antiBadword = isEnable
       break
-    case 'nsfw':
-      if (m.isGroup && !(isAdmin || isOwner)) { global.dfail('admin', m, conn); throw false }
-      chat.nsfw = isEnable
+   case 'antipromosi':
+  if (m.isGroup && !(isAdmin || isOwner))
+    return global.dfail('admin', m, conn)
+  chat.antiPromosi = isEnable
+  break
+  case 'antimedia':
+  if (m.isGroup && !(isAdmin || isOwner))
+    return global.dfail('admin', m, conn)
+  chat.antiMedia = isEnable
+  break
+    case 'autogpt':
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+      chat.autogpt = isEnable
       break
-    case 'premnsfwchat':
-      if (m.isGroup && !isROwner) { global.dfail('rowner', m, conn); throw false }
-      chat.premnsfw = isEnable
+   case 'autosimi':
+  if (m.isGroup && !(isAdmin || isOwner))
+    return global.dfail('admin', m, conn)
+  chat.autosimi = isEnable
+  break   
+  case 'autodl':
+  if (m.isGroup && !(isAdmin || isOwner))
+    return global.dfail('admin', m, conn)
+  chat.autodl = isEnable
+  break
+    case 'detect':
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+      chat.detect = isEnable
       break
-    case 'antitoxic':
-      if (m.isGroup && !(isAdmin || isOwner)) { global.dfail('admin', m, conn); throw false }
-      chat.antiToxic = isEnable
+
+    case 'rpg':
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+      chat.rpgs = isEnable
       break
+
     case 'autolevelup':
-      isUser = true
-      user.autolevelup = isEnable
-      break
-    case 'restrict':
       isAll = true
-      if (!isOwner) { global.dfail('owner', m, conn); throw false }
-      bot.restrict = isEnable
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      chat.autolevelup = isEnable
       break
-    case 'nyimak':
+    case 'autocorrect':
+  isAll = true
+  if (!isROwner) return global.dfail('rowner', m, conn)
+  global.autocorrect = isEnable
+  break
+
+    case 'public':
       isAll = true
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      global.opts['nyimak'] = isEnable
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      global.opts.self = !isEnable
+      config.mode = 'public'
+      getDatabase().setting('botMode', 'public')
       break
+
     case 'autoread':
       isAll = true
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      global.opts['autoread'] = isEnable
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      global.opts.autoread = isEnable
       break
-    case 'anticall':
-      isAll = true
-      if (!isOwner) return global.dfail('owner', m, conn)
-      bot.anticall = isEnable
-      break
+
     case 'pconly':
-    case 'privateonly':
       isAll = true
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      global.opts['pconly'] = isEnable
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      global.opts.pconly = isEnable
       break
+
     case 'gconly':
-    case 'grouponly':
       isAll = true
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      global.opts['gconly'] = isEnable
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      global.opts.gconly = isEnable
       break
-    case 'swonly':
-    case 'statusonly':
+
+    case 'self':
       isAll = true
-      if (!isROwner) { global.dfail('rowner', m, conn); throw false }
-      global.opts['swonly'] = isEnable
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      global.opts.self = isEnable
+      config.mode = isEnable ? 'self' : 'public'
+      getDatabase().setting('botMode', isEnable ? 'self' : 'public')
       break
+
     default: {
-      const listTxt = optRows.map(r => `  • ${r.title} → \`${r.id}\``).join('\n')
-      await sendQuickMenu(conn, m, {
-        title: `⚙️ ${global.namebot}`,
-        text: `*⚙️ PILIH OPSI*\n\n${listTxt}`,
-        footer: `_Ketik ${usedPrefix}enable <opsi>_`,
-        items: optRows.slice(0, 10).map(r => ({ label: r.title, id: r.id })),
-        quoted: ftroliQuoted
-      })
-      throw false
+      let totalOn = [
+        chat.welcome,
+        chat.delete,
+        chat.antiDelete,
+        chat.antiLink,
+        chat.antiBadword,
+        chat.antiPromosi,
+        chat.antiMedia,
+        chat.detect,
+        chat.autogpt,
+        chat.autosimi,
+        chat.autodl,
+        chat.rpgs,
+        !global.opts.self,
+        global.opts.self,
+        global.opts.autoread,
+        global.opts.pconly,
+        global.opts.gconly,
+        chat.autolevelup,
+        global.autocorrect
+      ].filter(Boolean).length
+
+      return m.reply(`
+Settings Bot
+
+[  GROUP  ]
+
+❏ Welcome      : ${chat.welcome ? '✅' : '❌'}
+❏ Delete       : ${chat.delete ? '✅' : '❌'}
+❏ AntiDelete   : ${chat.antiDelete ? '✅' : '❌'}
+❏ AntiLink     : ${chat.antiLink ? '✅' : '❌'}
+❏ AntiBadword  : ${chat.antiBadword ? '✅' : '❌'}
+❏ AntiPromosi  : ${chat.antiPromosi ? '✅' : '❌'}
+❏ AntiMedia    : ${chat.antiMedia ? '✅' : '❌'}
+❏ Detect       : ${chat.detect ? '✅' : '❌'}
+❏ AutoGPT      : ${chat.autogpt ? '✅' : '❌'}
+❏ AutoSimi     : ${chat.autosimi ? '✅' : '❌'}
+❏ AutoDL       : ${chat.autodl ? '✅' : '❌'}
+❏ RPG          : ${chat.rpgs ? '✅' : '❌'}
+
+[  OWNER  ]
+
+❏ Public       : ${!global.opts.self ? '✅' : '❌'}
+❏ Self         : ${global.opts.self ? '✅' : '❌'}
+❏ AutoRead     : ${global.opts.autoread ? '✅' : '❌'}
+❏ PC Only      : ${global.opts.pconly ? '✅' : '❌'}
+❏ GC Only      : ${global.opts.gconly ? '✅' : '❌'}
+❏ AutoLevelUp  : ${chat.autolevelup ? '✅' : '❌'}
+❏ AutoCorrect  : ${global.autocorrect ? '✅' : '❌'}
+
+Status : ${totalOn} fitur aktif
+
+Example:
+${usedPrefix}enable antilink 
+${usedPrefix}disable antilink 
+`.trim())
     }
   }
 
-  await sendQuickMenu(conn, m, {
-    title: `⚙️ ${global.namebot}`,
-    text: `*${htki} 𝙾𝙿𝚃𝙸𝙾𝙽𝚂 ${htka}*\n🗂️ *ᴛʏᴘᴇ:* ${type}\n📊 *sᴛᴀᴛᴜs:* Succes ✅\n🎚️ *ᴏᴘᴛɪᴏɴs:* ${isEnable ? 'Enable' : 'Disable'}\n📣 *ғᴏʀ:* ${isAll ? 'This Bot' : isUser ? 'You' : 'This Chat'}`,
-    items: [
-      { label: isEnable ? '✖️ Disable' : '✔️ Enable', id: `${isEnable ? `.off ${type}` : `.on ${type}`}` },
-      { label: '🎀 Menu', id: '.menu' }
-    ]
-  })
+  let target = isAll
+    ? 'untuk bot ini'
+    : m.isGroup
+      ? 'untuk grup ini'
+      : 'untuk chat ini'
+
+  await global.db.write?.().catch(() => null)
+
+  m.reply(`✅ Berhasil ${isEnable ? 'mengaktifkan' : 'menonaktifkan'} *${type}* ${target}`)
 }
 
-handler.help = ['en', 'dis'].map(v => v + 'able <option>')
-handler.tags = ['group']
-handler.command = /^((en|dis)able|(tru|fals)e|(turn)?o(n|ff)|[01])$/i
-
-export default handler
+export { pluginConfig as config, handler };
